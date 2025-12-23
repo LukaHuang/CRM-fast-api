@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -152,6 +153,9 @@ def create_campaign(
         content_text=campaign.content_text,
         template_id=campaign.template_id,
         recipient_filter=model_filter,
+        recipient_mode=campaign.recipient_mode,
+        recipient_ids=campaign.recipient_ids,
+        scheduled_at=campaign.scheduled_at,
     )
     return created
 
@@ -223,3 +227,90 @@ def send_test_email(
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+
+# ==================== 開信追蹤 ====================
+
+# 1x1 透明 PNG 圖片（base64）
+TRANSPARENT_PIXEL = bytes([
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+    0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+    0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+    0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+    0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+])
+
+
+@router.get("/track/{pixel_token}.png")
+def track_email_open(
+    pixel_token: str,
+    db: Session = Depends(get_db),
+):
+    """追蹤郵件開啟（回傳 1x1 透明 PNG）"""
+    service = EmailService(db)
+    service.record_email_open(pixel_token)
+
+    return Response(
+        content=TRANSPARENT_PIXEL,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
+
+
+@router.get("/campaigns/{campaign_id}/stats")
+def get_campaign_stats(
+    campaign_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """取得活動統計（開信率等）"""
+    service = EmailService(db)
+    stats = service.get_campaign_stats(campaign_id)
+    if not stats:
+        raise HTTPException(status_code=404, detail="找不到活動")
+    return stats
+
+
+# ==================== 排程 ====================
+
+
+@router.post("/campaigns/{campaign_id}/schedule")
+def schedule_campaign(
+    campaign_id: UUID,
+    scheduled_at: datetime,
+    db: Session = Depends(get_db),
+):
+    """設定或更新活動排程"""
+    service = EmailService(db)
+    campaign = service.update_campaign_schedule(campaign_id, scheduled_at)
+    if not campaign:
+        raise HTTPException(status_code=400, detail="無法設定排程（活動可能已發送或不存在）")
+    return {"success": True, "scheduled_at": campaign.scheduled_at}
+
+
+@router.delete("/campaigns/{campaign_id}/schedule")
+def cancel_campaign_schedule(
+    campaign_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """取消活動排程"""
+    service = EmailService(db)
+    campaign = service.cancel_campaign_schedule(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=400, detail="無法取消排程")
+    return {"success": True, "message": "排程已取消"}
+
+
+@router.get("/scheduler/status")
+def get_scheduler_status():
+    """取得排程器狀態"""
+    from app.services.scheduler_service import scheduler_service
+    jobs = scheduler_service.get_scheduled_jobs()
+    return {
+        "running": scheduler_service._started,
+        "jobs": jobs
+    }

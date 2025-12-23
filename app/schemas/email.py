@@ -14,6 +14,7 @@ class RecipientFilterEnum(str, Enum):
 
 class CampaignStatusEnum(str, Enum):
     DRAFT = "draft"
+    SCHEDULED = "scheduled"
     SENDING = "sending"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -51,6 +52,9 @@ class EmailCampaignCreate(BaseModel):
     content_html: str
     content_text: Optional[str] = None
     recipient_filter: RecipientFilterEnum = RecipientFilterEnum.ALL
+    recipient_mode: str = "filter"  # "filter" 或 "manual"
+    recipient_ids: Optional[List[str]] = None  # 手動模式的顧客 ID 列表
+    scheduled_at: Optional[datetime] = None  # 排程發送時間
 
 
 class EmailCampaignResponse(BaseModel):
@@ -59,10 +63,12 @@ class EmailCampaignResponse(BaseModel):
     subject: str
     template_id: Optional[str]
     recipient_filter: RecipientFilterEnum
+    recipient_mode: str
     status: CampaignStatusEnum
     total_recipients: int
     sent_count: int
     failed_count: int
+    scheduled_at: Optional[datetime]
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
     created_at: datetime
@@ -89,6 +95,8 @@ class EmailLogResponse(BaseModel):
     subject: Optional[str]
     status: str
     error_message: Optional[str]
+    opened_at: Optional[datetime]
+    open_count: int = 0
     sent_at: Optional[datetime]
     created_at: datetime
 
