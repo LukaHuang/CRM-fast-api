@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.database import engine, Base
-from app.routers import customers_router, events_router, analytics_router
+from app.routers import customers_router, events_router, analytics_router, email_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -17,6 +17,7 @@ app = FastAPI(
 app.include_router(customers_router)
 app.include_router(events_router)
 app.include_router(analytics_router)
+app.include_router(email_router)
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

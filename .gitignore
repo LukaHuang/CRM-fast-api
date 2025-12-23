@@ -14,3 +14,6 @@ my_data/
 
 # Environment variables
 .env
+
+# OAuth credentials
+credentials/
