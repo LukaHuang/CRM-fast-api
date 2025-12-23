@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM 顧客關係管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen" x-data="crmApp()">
+    <div class="flex">
+        <!-- 側邊欄 -->
+        <aside class="w-64 bg-gray-900 min-h-screen fixed left-0 top-0">
+            <div class="p-6">
+                <h1 class="text-xl font-bold text-white mb-2">CRM 系統</h1>
+                <p class="text-gray-400 text-sm">顧客關係管理</p>
+            </div>
+            <nav class="mt-6">
+                <button @click="activeTab = 'overview'"
+                        :class="activeTab === 'overview' ? 'bg-blue-600 text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-gray-800 hover:text-white'"
+                        class="w-full flex items-center px-6 py-3 text-left transition">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                    總覽
+                </button>
+                <button @click="activeTab = 'customers'"
+                        :class="activeTab === 'customers' ? 'bg-blue-600 text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-gray-800 hover:text-white'"
+                        class="w-full flex items-center px-6 py-3 text-left transition">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    顧客管理
+                </button>
+                <button @click="activeTab = 'events'"
+                        :class="activeTab === 'events' ? 'bg-blue-600 text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-gray-800 hover:text-white'"
+                        class="w-full flex items-center px-6 py-3 text-left transition">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    活動管理
+                </button>
+            </nav>
+
+            <!-- 快速統計 -->
+            <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700">
+                <div class="text-gray-400 text-xs mb-2">快速統計</div>
+                <div class="text-white text-lg font-bold" x-text="overview.total_customers || 0"></div>
+                <div class="text-gray-400 text-sm">位顧客</div>
+            </div>
+        </aside>
+
+        <!-- 主要內容區 -->
+        <main class="flex-1 ml-64 p-8">
+            <!-- 總覽頁面 -->
+            <div x-show="activeTab === 'overview'" x-cloak>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">數據總覽</h2>
+
+                <!-- 統計卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="text-gray-500 text-sm font-medium">顧客總數</div>
+                        <div class="text-3xl font-bold text-gray-800" x-text="overview.total_customers"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="text-gray-500 text-sm font-medium">活動場次</div>
+                        <div class="text-3xl font-bold text-gray-800" x-text="overview.total_events"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="text-gray-500 text-sm font-medium">購買人數</div>
+                        <div class="text-3xl font-bold text-green-600" x-text="overview.total_purchases"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="text-gray-500 text-sm font-medium">總營收</div>
+                        <div class="text-3xl font-bold text-green-600" x-text="'NT$' + overview.total_revenue?.toLocaleString()"></div>
+                    </div>
+                </div>
+
+                <!-- 轉換分析 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">轉換漏斗</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">活動參加者</span>
+                                <span class="font-bold text-blue-600" x-text="conversion.total_event_attendees"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div class="bg-blue-500 h-4 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">轉換為購買者</span>
+                                <span class="font-bold text-green-600" x-text="conversion.converted_to_purchase"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div class="bg-green-500 h-4 rounded-full" :style="'width: ' + Math.min(conversion.conversion_rate * 10, 100) + '%'"></div>
+                            </div>
+                            <div class="text-center text-2xl font-bold text-green-600">
+                                <span x-text="conversion.conversion_rate"></span>% 轉換率
+                            </div>
+                            <div class="text-sm text-gray-500 text-center">
+                                <span x-text="conversion.purchased_without_events"></span> 人未參加活動直接購買
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">顧客分群</h3>
+                        <canvas id="segmentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 轉換率最高的活動 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">轉換率最高的活動</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">活動名稱</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">報名人數</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">轉換人數</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">轉換率</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <template x-for="event in conversion.top_converting_events" :key="event.event_name">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 text-sm text-gray-900" x-text="event.event_name"></td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 text-right" x-text="event.total_registrations"></td>
+                                        <td class="px-4 py-3 text-sm text-green-600 text-right" x-text="event.converted_to_purchase"></td>
+                                        <td class="px-4 py-3 text-sm text-right">
+                                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                                  :class="event.conversion_rate > 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                                                  x-text="event.conversion_rate + '%'"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 顧客管理頁面 -->
+            <div x-show="activeTab === 'customers'" x-cloak>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">顧客管理</h2>
+
+                <!-- 搜尋與篩選 -->
+                <div class="bg-white rounded-lg shadow p-4 mb-6">
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <input type="text"
+                               x-model="customerSearch"
+                               @input.debounce.300ms="loadCustomers()"
+                               placeholder="搜尋姓名或 Email..."
+                               class="flex-1 min-w-64 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <select x-model="customerFilter" @change="loadCustomers()" class="px-4 py-2 border rounded-lg">
+                            <option value="">全部顧客</option>
+                            <option value="purchased">已購買</option>
+                            <option value="not_purchased">未購買</option>
+                            <option value="events_only">僅參加活動</option>
+                        </select>
+                        <span class="text-sm text-gray-500">
+                            共 <span x-text="customerCount" class="font-bold"></span> 位顧客
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 顧客列表 -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">顧客資訊</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">產業</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">參加活動</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">購買次數</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <template x-for="customer in customers" :key="customer.id">
+                                <tr class="hover:bg-gray-50 cursor-pointer" @click="showCustomerDetail(customer.id)">
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-medium text-gray-900" x-text="customer.name || '未提供'"></div>
+                                        <div class="text-sm text-gray-500" x-text="customer.email"></div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-600" x-text="customer.industry || '-'"></td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" x-text="customer.event_count"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800" x-text="customer.purchase_count"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span x-show="customer.has_purchased" class="px-2 py-1 rounded-full text-xs font-medium bg-green-500 text-white">已購買</span>
+                                        <span x-show="!customer.has_purchased && customer.event_count > 0" class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">潛在客戶</span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+
+                    <!-- 分頁 -->
+                    <div class="bg-gray-50 px-6 py-3 flex justify-between items-center">
+                        <button @click="prevPage()" :disabled="currentPage === 0"
+                                class="px-4 py-2 bg-white border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+                            上一頁
+                        </button>
+                        <span class="text-sm text-gray-600">
+                            第 <span x-text="currentPage + 1"></span> 頁
+                        </span>
+                        <button @click="nextPage()" :disabled="customers.length < pageSize"
+                                class="px-4 py-2 bg-white border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+                            下一頁
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活動管理頁面 -->
+            <div x-show="activeTab === 'events'" x-cloak>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">活動管理</h2>
+
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">活動名稱</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日期</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">報名人數</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">出席率</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <template x-for="event in eventPerformance" :key="event.event_name">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-900" x-text="event.event_name"></td>
+                                    <td class="px-6 py-4 text-sm text-gray-600" x-text="event.event_date || '-'"></td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" x-text="event.total_registrations"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <div class="w-24 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-green-500 h-2 rounded-full" :style="'width: ' + event.check_in_rate + '%'"></div>
+                                            </div>
+                                            <span class="text-sm text-gray-600" x-text="event.check_in_rate + '%'"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 顧客詳情彈窗 -->
+    <div x-show="selectedCustomer" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="selectedCustomer = null">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800" x-text="selectedCustomer?.name || '未提供姓名'"></h2>
+                        <p class="text-gray-600" x-text="selectedCustomer?.email"></p>
+                    </div>
+                    <button @click="selectedCustomer = null" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <span class="text-sm text-gray-500">電話</span>
+                        <p class="font-medium" x-text="selectedCustomer?.phone || '-'"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">產業</span>
+                        <p class="font-medium" x-text="selectedCustomer?.industry || '-'"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">職稱</span>
+                        <p class="font-medium" x-text="selectedCustomer?.job_title || '-'"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">年齡區間</span>
+                        <p class="font-medium" x-text="selectedCustomer?.age_range || '-'"></p>
+                    </div>
+                </div>
+
+                <!-- 參加的活動 -->
+                <div class="mb-6" x-show="selectedCustomer?.events?.length > 0">
+                    <h3 class="font-semibold text-gray-800 mb-2">參加的活動 (<span x-text="selectedCustomer?.events?.length"></span>)</h3>
+                    <div class="space-y-2">
+                        <template x-for="event in selectedCustomer?.events" :key="event.id">
+                            <div class="bg-blue-50 rounded-lg p-3">
+                                <div class="font-medium text-blue-900" x-text="event.name"></div>
+                                <div class="text-sm text-blue-700" x-text="event.event_date"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 購買紀錄 -->
+                <div x-show="selectedCustomer?.purchases?.length > 0">
+                    <h3 class="font-semibold text-gray-800 mb-2">購買紀錄 (<span x-text="selectedCustomer?.purchases?.length"></span>)</h3>
+                    <div class="space-y-2">
+                        <template x-for="purchase in selectedCustomer?.purchases" :key="purchase.id">
+                            <div class="bg-green-50 rounded-lg p-3">
+                                <div class="font-medium text-green-900" x-text="purchase.product_name"></div>
+                                <div class="text-sm text-green-700">NT$ <span x-text="purchase.amount?.toLocaleString()"></span></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function crmApp() {
+            return {
+                activeTab: 'overview',
+                overview: {},
+                conversion: { top_converting_events: [] },
+                customers: [],
+                customerSearch: '',
+                customerFilter: '',
+                customerCount: 0,
+                currentPage: 0,
+                pageSize: 20,
+                eventPerformance: [],
+                selectedCustomer: null,
+                segmentChart: null,
+
+                async init() {
+                    await this.loadOverview();
+                    await this.loadConversion();
+                    await this.loadCustomers();
+                    await this.loadEventPerformance();
+                    this.$nextTick(() => this.initChart());
+                },
+
+                async loadOverview() {
+                    try {
+                        const res = await fetch('/api/analytics/overview');
+                        this.overview = await res.json();
+                    } catch (e) {
+                        console.error('Failed to load overview', e);
+                    }
+                },
+
+                async loadConversion() {
+                    try {
+                        const res = await fetch('/api/analytics/conversion');
+                        this.conversion = await res.json();
+                    } catch (e) {
+                        console.error('Failed to load conversion', e);
+                    }
+                },
+
+                async loadCustomers() {
+                    try {
+                        let url = `/api/customers?skip=${this.currentPage * this.pageSize}&limit=${this.pageSize}`;
+                        if (this.customerSearch) {
+                            url += `&search=${encodeURIComponent(this.customerSearch)}`;
+                        }
+                        if (this.customerFilter === 'purchased') {
+                            url += '&has_purchased=true';
+                        } else if (this.customerFilter === 'not_purchased') {
+                            url += '&has_purchased=false';
+                        } else if (this.customerFilter === 'events_only') {
+                            url += '&has_purchased=false&has_events=true';
+                        }
+
+                        const res = await fetch(url);
+                        this.customers = await res.json();
+
+                        // Get count
+                        let countUrl = '/api/customers/count';
+                        const params = [];
+                        if (this.customerSearch) params.push(`search=${encodeURIComponent(this.customerSearch)}`);
+                        if (this.customerFilter === 'purchased') params.push('has_purchased=true');
+                        else if (this.customerFilter === 'not_purchased') params.push('has_purchased=false');
+                        else if (this.customerFilter === 'events_only') params.push('has_purchased=false&has_events=true');
+                        if (params.length) countUrl += '?' + params.join('&');
+
+                        const countRes = await fetch(countUrl);
+                        const countData = await countRes.json();
+                        this.customerCount = countData.count;
+                    } catch (e) {
+                        console.error('Failed to load customers', e);
+                    }
+                },
+
+                async loadEventPerformance() {
+                    try {
+                        const res = await fetch('/api/analytics/events/performance');
+                        this.eventPerformance = await res.json();
+                    } catch (e) {
+                        console.error('Failed to load event performance', e);
+                    }
+                },
+
+                async showCustomerDetail(customerId) {
+                    try {
+                        const res = await fetch(`/api/customers/${customerId}`);
+                        this.selectedCustomer = await res.json();
+                    } catch (e) {
+                        console.error('Failed to load customer detail', e);
+                    }
+                },
+
+                prevPage() {
+                    if (this.currentPage > 0) {
+                        this.currentPage--;
+                        this.loadCustomers();
+                    }
+                },
+
+                nextPage() {
+                    if (this.customers.length === this.pageSize) {
+                        this.currentPage++;
+                        this.loadCustomers();
+                    }
+                },
+
+                initChart() {
+                    const ctx = document.getElementById('segmentChart');
+                    if (!ctx) return;
+
+                    if (this.segmentChart) {
+                        this.segmentChart.destroy();
+                    }
+
+                    this.segmentChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['已購買（參加過活動）', '僅參加活動', '直接購買（未參加活動）'],
+                            datasets: [{
+                                data: [
+                                    this.conversion.converted_to_purchase || 0,
+                                    (this.conversion.total_event_attendees || 0) - (this.conversion.converted_to_purchase || 0),
+                                    this.conversion.purchased_without_events || 0
+                                ],
+                                backgroundColor: ['#10B981', '#3B82F6', '#8B5CF6']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            };
+        }
+    </script>
+</body>
+</html>
